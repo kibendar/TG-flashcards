@@ -55,17 +55,40 @@ public class EducationService implements IEducationService {
     this.flashcardService = flashcardService;
   }
 
+  /**
+   * Retrieves a flashcard package by its ID.
+   * Delegates to FlashcardService for data access.
+   *
+   * @param packageId the ID of the flashcard package
+   * @return the FlashcardPackage entity
+   * @throws NoSuchElementException if package is not found
+   */
   public FlashcardPackage getFlashcardPackage(long packageId)
       throws NoSuchElementException {
     return flashcardService.getFlashcardPackage(packageId);
   }
 
+  /**
+   * Retrieves a flashcard from the user's current education list.
+   *
+   * @param id the position/index in the education list
+   * @param user the user whose education list to query
+   * @return the FlashcardEducationList entry
+   * @throws NoSuchElementException if no flashcard exists at that position
+   */
   public FlashcardEducationList getFlashcardEducationList(long id, User user) {
     return flashcardEducationListRepository
         .findById(new FlashcardEducationList.FlashcardEducationListPK(id, user))
         .orElseThrow();
   }
 
+  /**
+   * Retrieves all flashcard packages owned by a specific user.
+   *
+   * @param chatId the Telegram chat ID of the user
+   * @return list of FlashcardPackage entities owned by the user, or empty list on error
+   * @throws NoSuchElementException if user is not found
+   */
   public List<FlashcardPackage> getFlashcardPackageListByUser(long chatId)
       throws NoSuchElementException {
     try {
@@ -257,6 +280,15 @@ public class EducationService implements IEducationService {
     userService.save(user);
   }
 
+  /**
+   * Creates a congratulation message with session statistics when user completes all flashcards.
+   * Displays study time, counts of hard/hardest cards, and offers option to restart the package.
+   *
+   * @param chatId the Telegram chat ID
+   * @param messageId the message ID to edit
+   * @param packageId the ID of the completed package (for restart functionality)
+   * @return EditMessageText with completion message and statistics
+   */
   public EditMessageText createCongratulationMessage(long chatId, int messageId,
                                                      long packageId) {
 
@@ -375,6 +407,13 @@ public class EducationService implements IEducationService {
     }
   }
 
+  /**
+   * Finds the next available ID for adding a flashcard to the repetition list.
+   * Returns 1 if the list is empty, otherwise returns the maximum ID + 1.
+   *
+   * @param chatId the Telegram chat ID of the user
+   * @return the next available ID for the repetition list
+   */
   private long getAvailableIdForRepetitionList(long chatId) {
     List<Long> idsList = flashcardRepetitionListRepository.findIds(chatId);
 

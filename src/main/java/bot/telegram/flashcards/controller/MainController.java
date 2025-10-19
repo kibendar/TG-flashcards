@@ -20,6 +20,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Main controller for the Telegram bot.
+ * Handles all incoming updates (messages and callback queries) and routes them to appropriate controllers.
+ * Extends TelegramLongPollingBot to receive updates via long polling.
+ */
 @Slf4j
 @Controller
 public class MainController extends TelegramLongPollingBot {
@@ -60,6 +65,12 @@ public class MainController extends TelegramLongPollingBot {
         return config.getName();
     }
 
+    /**
+     * Main entry point for all bot updates.
+     * Routes updates to appropriate handlers based on update type.
+     *
+     * @param update the incoming Telegram update
+     */
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -69,7 +80,12 @@ public class MainController extends TelegramLongPollingBot {
         }
     }
 
-
+    /**
+     * Handles incoming text messages (commands).
+     * Routes to appropriate controller based on command text.
+     *
+     * @param update the update containing the message
+     */
     private void onMessageReceived(Update update) {
         Message msg = update.getMessage();
         String msgText = msg.getText();
@@ -85,6 +101,12 @@ public class MainController extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Handles incoming callback queries from inline keyboard buttons.
+     * Routes to appropriate controller based on callback data.
+     *
+     * @param update the update containing the callback query
+     */
     private void onCallbackQueryReceived(Update update) {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         String callbackQueryData = callbackQuery.getData();
@@ -111,6 +133,15 @@ public class MainController extends TelegramLongPollingBot {
         }
 
 
+    /**
+     * Executes a Telegram API method (sending or editing a message).
+     * Handles any Telegram API exceptions by wrapping them in RuntimeException.
+     *
+     * @param <T> the return type of the method
+     * @param <Method> the type of BotApiMethod being executed
+     * @param message the message to execute
+     * @throws RuntimeException if a TelegramApiException occurs
+     */
     private <T extends Serializable, Method extends BotApiMethod<T>> void executeMessage(Method message) {
         try {
             execute(message);
@@ -119,6 +150,11 @@ public class MainController extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Sends a default error message when an unrecognized command is received.
+     *
+     * @param chatId the Telegram chat ID to send the message to
+     */
     private void defaultMessage(long chatId) {
         SendMessage commandNotFoundMessage = SendMessage.builder()
                 .chatId(chatId)

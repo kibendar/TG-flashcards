@@ -40,7 +40,8 @@ A sophisticated Telegram bot for creating, managing, and learning with flashcard
 - Inline keyboard buttons for seamless interaction
 - Comprehensive help and guide messages
 - Error handling with user-friendly messages
-- Session validation to prevent errors
+- **Robust session validation**: Prevents errors when users aren't in active learning sessions
+- Graceful error messages guide users back to valid states
 
 ## Technology Stack
 
@@ -59,7 +60,7 @@ A sophisticated Telegram bot for creating, managing, and learning with flashcard
 ## Architecture
 
 ### Design Pattern
-The application follows a **layered architecture** pattern:
+The application follows a **layered architecture** pattern with **SOLID principles**:
 
 ```
 ┌─────────────────────────────────────┐
@@ -77,7 +78,13 @@ The application follows a **layered architecture** pattern:
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│       Service Layer                  │
+│    Service Interface Layer           │
+│  - IUserService                      │
+│  - IEducationService                 │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│  Service Implementation Layer        │
 │  - StartService                      │
 │  - HelpService                       │
 │  - EducationService                  │
@@ -102,12 +109,34 @@ The application follows a **layered architecture** pattern:
 └──────────────────────────────────────┘
 ```
 
+### SOLID Principles Implementation
+
+The project follows **SOLID principles** for better maintainability and testability:
+
+- **Single Responsibility Principle (SRP)**: Each service class has a single, well-defined responsibility
+  - `UserService`: Manages user data operations
+  - `EducationService`: Handles learning session logic
+  - `StopService`: Manages session termination
+
+- **Open/Closed Principle (OCP)**: Classes are open for extension but closed for modification through interface-based design
+
+- **Liskov Substitution Principle (LSP)**: Service implementations can be substituted with their interface contracts
+
+- **Interface Segregation Principle (ISP)**: Focused interfaces (`IUserService`, `IEducationService`) contain only relevant methods
+
+- **Dependency Inversion Principle (DIP)**: High-level modules (controllers) depend on abstractions (interfaces) rather than concrete implementations
+
 ### Key Components
 
-**Controllers**: Handle incoming Telegram updates and route to appropriate services
-**Services**: Contain business logic and coordinate between repositories
-**Repositories**: Data access layer using Spring Data JPA
-**Models**: Entity classes representing database tables
+**Controllers**: Handle incoming Telegram updates and route to appropriate services. Controllers depend on service interfaces for loose coupling.
+
+**Service Interfaces**: Define contracts for business operations, enabling dependency inversion and easier testing.
+
+**Service Implementations**: Contain business logic and coordinate between repositories. Each service follows SRP with focused responsibilities.
+
+**Repositories**: Data access layer using Spring Data JPA for database operations.
+
+**Models**: Entity classes representing database tables with JPA annotations.
 
 ## Prerequisites
 
@@ -324,6 +353,9 @@ telegram-flashcards-bot/
 │   │   │   │   ├── ShowAllPackagesController.java
 │   │   │   │   └── StopController.java
 │   │   │   ├── service/
+│   │   │   │   ├── interfaces/
+│   │   │   │   │   ├── IUserService.java
+│   │   │   │   │   └── IEducationService.java
 │   │   │   │   ├── StartService.java
 │   │   │   │   ├── HelpService.java
 │   │   │   │   ├── EducationService.java
@@ -355,9 +387,11 @@ telegram-flashcards-bot/
 │   │       └── logback.xml
 │   └── test/
 │       └── java/bot/telegram/flashcards/
-│           ├── service/
-│           ├── controller/
-│           └── repository/
+│           └── service/
+│               ├── StopServiceTest.java
+│               ├── UserServiceTest.java
+│               ├── StartServiceTest.java
+│               └── HelpServiceTest.java
 ├── logs/
 │   └── flashcards.log
 ├── pom.xml
@@ -408,28 +442,37 @@ mvn test jacoco:report
 
 ### Test Coverage
 
-The project aims for:
+The project uses **Test-Driven Development (TDD)** practices and aims for:
 - **80%+ code coverage** for service layer
 - **70%+ code coverage** for controller layer
 - **100% coverage** for critical business logic
+
+Current test suite includes:
+- `StopServiceTest`: Tests for session termination functionality
+- `UserServiceTest`: Tests for user data operations
+- `StartServiceTest`: Tests for welcome and onboarding features
+- `HelpServiceTest`: Tests for help command functionality
 
 ### Example Test
 
 ```java
 @Test
+@DisplayName("Should return error message when user is not in a learning session")
 void testStopLearningSession_WhenUserNotInSession_ReturnsErrorMessage() {
     // Given
-    User user = new User();
-    user.setId(12345L);
     user.setCurrentFlashcard(null);
-
-    when(userService.getUser(12345L)).thenReturn(user);
+    when(userService.getUser(CHAT_ID)).thenReturn(user);
 
     // When
-    SendMessage result = stopService.stopLearningSession(12345L);
+    SendMessage result = stopService.stopLearningSession(CHAT_ID);
 
     // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChatId()).isEqualTo(String.valueOf(CHAT_ID));
     assertThat(result.getText()).contains("You are not currently in a learning session");
+
+    // Verify that clearTemporaryResources was never called
+    verify(educationService, never()).clearTemporaryResourcesAfterEducation(anyLong());
 }
 ```
 

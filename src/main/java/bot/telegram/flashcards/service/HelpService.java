@@ -6,10 +6,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
+/**
+ * Service for providing help and command documentation to users.
+ * Follows Single Responsibility Principle - only handles help message generation.
+ */
 @Service
 @Slf4j
 public class HelpService {
 
+    /**
+     * Creates a comprehensive help message with all available commands and usage instructions.
+     * The message includes command descriptions, how-to-use steps, and learning tips.
+     *
+     * @param chatId the Telegram chat ID
+     * @return SendMessage containing the formatted help text with markdown, or null on error
+     */
     public SendMessage createHelpMessage(long chatId) {
         try {
             String helpText = """

@@ -13,12 +13,23 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.util.List;
 
+/**
+ * Service for handling user onboarding and welcome messages.
+ * Follows Single Responsibility Principle - only handles start/welcome functionality.
+ */
 @Service
 @AllArgsConstructor
 @Slf4j
 public class StartService {
     private final UserRepository userRepository;
 
+    /**
+     * Adds a new user to the database if they don't already exist.
+     * This method is called when a user first interacts with the bot.
+     *
+     * @param chatId the Telegram chat ID of the user
+     * @return true if the user already existed in the repository, false if they were newly added or an error occurred
+     */
     public boolean addUserIfNotInRepo(long chatId) {
         try {
             boolean didUserExistInRepo = userRepository.existsById(chatId);
@@ -33,6 +44,14 @@ public class StartService {
         }
     }
 
+    /**
+     * Creates both welcome and guide messages for returning users.
+     * This variant sends both messages immediately without requiring user interaction.
+     *
+     * @param chatId the Telegram chat ID
+     * @param userFirstName the user's first name from Telegram
+     * @return list containing welcome message and guide message, or empty list on error
+     */
     public List<SendMessage> createWelcomeAndGuideMessages(long chatId, String userFirstName) {
         try {
             SendMessage welcomeMessage = SendMessage.builder()
@@ -47,6 +66,14 @@ public class StartService {
         }
     }
 
+    /**
+     * Creates a welcome message with an inline button to access the guide.
+     * This variant is used for new users to give them control over when to view the guide.
+     *
+     * @param chatId the Telegram chat ID
+     * @param userFirstName the user's first name from Telegram
+     * @return list containing a single welcome message with "Get Guide" button, or empty list on error
+     */
     public List<SendMessage> createWelcomeMessageWithGetGuideButton(long chatId, String userFirstName) {
         try {
             SendMessage welcomeMessage = SendMessage.builder()
@@ -65,6 +92,13 @@ public class StartService {
         }
     }
 
+    /**
+     * Creates a comprehensive quick start guide message with step-by-step instructions.
+     * The guide includes how to browse packages, start learning, answer cards, and use commands.
+     *
+     * @param chatId the Telegram chat ID
+     * @return SendMessage containing the formatted guide text, or null on error
+     */
     public SendMessage createGuideMessage(long chatId) {
         try {
             String guideText = """
