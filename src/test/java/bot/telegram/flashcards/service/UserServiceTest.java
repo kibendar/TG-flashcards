@@ -2,9 +2,8 @@ package bot.telegram.flashcards.service;
 
 import bot.telegram.flashcards.models.User;
 import bot.telegram.flashcards.repository.UserRepository;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,60 +13,104 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test class for UserService
+ * Tests user retrieval and persistence operations
+ */
 @ExtendWith(MockitoExtension.class)
+@DisplayName("UserService Tests")
 class UserServiceTest {
-
-    @InjectMocks
-    private UserService userService;
 
     @Mock
     private UserRepository userRepository;
 
-    private User mockUser;
-    private long userId;
+    @InjectMocks
+    private UserService userService;
+
+    private User user;
+    private static final long USER_ID = 12345L;
 
     @BeforeEach
     void setUp() {
-        userId = 1L;
-        mockUser = new User();
-        mockUser.setId(userId);
-    }
-
-    @AfterEach
-    void tearDown() {
-        // Any cleanup can be done here
-        reset(userRepository); // Reset the mock
+        user = new User();
+        user.setId(USER_ID);
+        user.setCurrentFlashcard(null);
     }
 
     @Test
-    void getUser() {
-        // Define the behavior of the userRepository mock
-        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+    @DisplayName("Should successfully retrieve user by ID")
+    void testGetUser_WhenUserExists_ReturnsUser() {
+        // Given
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-        // Test the getUser method
-        User user = userService.getUser(userId);
-        assertThat(user).isNotNull();
-        assertThat(user.getId()).isEqualTo(userId);
+        // When
+        User result = userService.getUser(USER_ID);
 
-        // Test the case when the user is not found
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> userService.getUser(userId))
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(USER_ID);
+        verify(userRepository, times(1)).findById(USER_ID);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when user not found")
+    void testGetUser_WhenUserNotExists_ThrowsException() {
+        // Given
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.getUser(USER_ID))
                 .isInstanceOf(NoSuchElementException.class);
+
+        verify(userRepository, times(1)).findById(USER_ID);
     }
 
     @Test
-    void save() {
-        User user = new User();
+    @DisplayName("Should successfully save user")
+    void testSave_WhenValidUser_SavesSuccessfully() {
+        // Given
+        when(userRepository.save(user)).thenReturn(user);
 
-        // Call the save method
+        // When
         userService.save(user);
 
-        // Verify that the save method of the repository was called with the correct user
+        // Then
         verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should save user with current flashcard")
+    void testSave_WhenUserHasCurrentFlashcard_SavesWithFlashcard() {
+        // Given
+        user.setCurrentFlashcard(5L);
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        userService.save(user);
+
+        // Then
+        verify(userRepository, times(1)).save(user);
+        assertThat(user.getCurrentFlashcard()).isEqualTo(5L);
+    }
+
+    @Test
+    @DisplayName("Should save user with hard and hardest card counts")
+    void testSave_WhenUserHasCardCounts_SavesWithCounts() {
+        // Given
+        user.addHardCard(3L);
+        user.addHardestCard(2L);
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        userService.save(user);
+
+        // Then
+        verify(userRepository, times(1)).save(user);
+        assertThat(user.getHardCard()).isEqualTo(3L);
+        assertThat(user.getHardestCard()).isEqualTo(2L);
     }
 }

@@ -23,9 +23,6 @@ public class FlashcardPackage {
     @OneToMany(mappedBy = "flashcardPackage", fetch = FetchType.EAGER)
     private List<Flashcard> flashcardList;
 
-    @OneToMany(mappedBy = "flashcardPackage")
-    private List<FlashcardsStatistics> flashcardsStatisticsList;
-
     @ManyToOne
     @JoinColumn(name = "userId")
     private User user;

@@ -27,25 +27,24 @@ public class MainController extends TelegramLongPollingBot {
     private final StartController startController;
     private final HelpController helpController;
     private final EducationController educationController;
-    private final StatisticsController statisticsController;
     private final ShowAllPackagesController showAllPackagesController;
+    private final StopController stopController;
 
     @Autowired
-    public MainController(BotConfig config, StartController startController, EducationController educationController, HelpController helpController, StatisticsController statisticsController, ShowAllPackagesController ShowAllPackagesController) {
+    public MainController(BotConfig config, StartController startController, EducationController educationController, HelpController helpController, ShowAllPackagesController ShowAllPackagesController, StopController stopController) {
         super(config.getToken());
         this.config = config;
         this.startController = startController;
         this.educationController = educationController;
         this.helpController = helpController;
-        this.statisticsController = statisticsController;
         this.showAllPackagesController = ShowAllPackagesController;
+        this.stopController = stopController;
 
 
         List<BotCommand> listOfCommands = new ArrayList<>();
         listOfCommands.add(new BotCommand("/start", "get a welcome message"));
-        listOfCommands.add(new BotCommand("/starteducation", "start learning cards"));
         listOfCommands.add(new BotCommand("/showallpackages", "show all cards to learn"));
-        listOfCommands.add(new BotCommand("/statistics", "show learning statistics"));
+        listOfCommands.add(new BotCommand("/stop", "stop current learning session"));
         listOfCommands.add(new BotCommand("/help", "show commands info and usages"));
 
 
@@ -79,10 +78,9 @@ public class MainController extends TelegramLongPollingBot {
             case "/start" -> startController.startCommandReceived(update)
                     .forEach(this::executeMessage);
 
-            case "/starteducation" -> executeMessage(educationController.startEducationCommandReceived(update));
-            case "/statistics" -> executeMessage(statisticsController.statisticsCommandReceived(update));
             case "/help" -> executeMessage(helpController.helpCommandReceived(update));
             case "/showallpackages" -> executeMessage(showAllPackagesController.showAllPackagesCommandReceived(update));
+            case "/stop" -> executeMessage(stopController.stopCommandReceived(update));
             default -> defaultMessage(msg.getChatId());
         }
     }

@@ -5,7 +5,8 @@ import bot.telegram.flashcards.models.FlashcardPackage;
 import bot.telegram.flashcards.models.User;
 import bot.telegram.flashcards.service.EducationService;
 import bot.telegram.flashcards.service.FlashcardService;
-import bot.telegram.flashcards.service.UserService;
+import bot.telegram.flashcards.service.interfaces.IEducationService;
+import bot.telegram.flashcards.service.interfaces.IUserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -22,53 +23,17 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller for education/learning related operations.
+ * Follows Dependency Inversion Principle - depends on service interfaces.
+ */
 @Controller
 @AllArgsConstructor
 @Slf4j
 public class EducationController {
 
-    private final EducationService educationService;
-    private final UserService userService;
-
-
-    public SendMessage startEducationCommandReceived(Update update) {
-        try {
-            long chatId = update.getMessage().getChatId();
-            List<FlashcardPackage> flashcardPackageList =
-                    educationService.getFlashcardPackageListByUser(chatId);
-
-            return getChoiceMessage(chatId, flashcardPackageList);
-        }catch (Exception e){
-            log.error("Error: cannot start education command received", e);
-            return null;
-        }
-    }
-
-    private SendMessage getChoiceMessage(long chatId, List<FlashcardPackage> flashcardPackageList) {
-        SendMessage packageChoiceMessage = new SendMessage();
-        packageChoiceMessage.setChatId(chatId);
-
-        if (flashcardPackageList.isEmpty()) {
-            packageChoiceMessage.setText("There is no flashcard packages created yet, you can create one using /something command!");
-        } else {
-            packageChoiceMessage.setText("Choose flashcard package you want to practise with:");
-            packageChoiceMessage.setReplyMarkup(createChoiceMessageReplyMarkup(flashcardPackageList));
-        }
-        return packageChoiceMessage;
-    }
-
-    private InlineKeyboardMarkup createChoiceMessageReplyMarkup(List<FlashcardPackage> flashcardPackageList) {
-        List<List<InlineKeyboardButton>> buttonRowList = new ArrayList<>();
-        flashcardPackageList.forEach((f) -> {
-            InlineKeyboardButton button = InlineKeyboardButton.builder()
-                    .text(f.getTitle())
-                    .callbackData("FLASHCARD_PACKAGE_%d_SELECTED".formatted(f.getId()))
-                    .build();
-            buttonRowList.add(List.of(button));
-        });
-
-        return new InlineKeyboardMarkup(buttonRowList);
-    }
+    private final IEducationService educationService;
+    private final IUserService userService;
 
     public EditMessageText startEducation(CallbackQuery callbackQuery) {
         long flashcardPackageId = Long.parseLong(callbackQuery.getData().split("_")[2]);
@@ -97,6 +62,17 @@ public class EducationController {
         long chatId = callbackQuery.getMessage().getChatId();
         int messageId = ((Message) callbackQuery.getMessage()).getMessageId();
 
+        // Validate that user is in a learning session
+        User user = userService.getUser(chatId);
+        if (user.getCurrentFlashcard() == null) {
+            return EditMessageText.builder()
+                    .chatId(chatId)
+                    .messageId(messageId)
+                    .text("You are not currently in a learning session.\n\n" +
+                          "Your session may have been stopped or expired. Please use /showallpackages to start a new learning session.")
+                    .build();
+        }
+
         switch (answerStatus) {
             case HARDEST -> educationService.duplicateFlashcard(chatId, 2);
             case HARD -> educationService.duplicateFlashcard(chatId, 1);
@@ -111,6 +87,17 @@ public class EducationController {
     public EditMessageText nextQuestionRepetition(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
         int messageId = ((Message) callbackQuery.getMessage()).getMessageId();
+
+        // Validate that user is in a learning session
+        User user = userService.getUser(chatId);
+        if (user.getCurrentFlashcard() == null) {
+            return EditMessageText.builder()
+                    .chatId(chatId)
+                    .messageId(messageId)
+                    .text("You are not currently in a learning session.\n\n" +
+                          "Your session may have been stopped or expired. Please use /showallpackages to start a new learning session.")
+                    .build();
+        }
 
         return educationService.nextRepetitionFlashcard(chatId, messageId);
     }

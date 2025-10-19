@@ -2,106 +2,139 @@ package bot.telegram.flashcards.service;
 
 import bot.telegram.flashcards.models.User;
 import bot.telegram.flashcards.repository.UserRepository;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-
+/**
+ * Test class for StartService
+ * Tests user registration and welcome message functionality
+ */
 @ExtendWith(MockitoExtension.class)
+@DisplayName("StartService Tests")
 class StartServiceTest {
-
-    @InjectMocks
-    private StartService startService;
 
     @Mock
     private UserRepository userRepository;
 
-    private User mockUser;
-    private long userId;
+    @InjectMocks
+    private StartService startService;
+
+    private static final long CHAT_ID = 12345L;
+    private static final String USER_FIRST_NAME = "John";
 
     @BeforeEach
     void setUp() {
-        userId = 1L;
-        mockUser = new User();
-        mockUser.setId(userId);
-    }
-
-    @AfterEach
-    void tearDown() {
-        Mockito.reset(userRepository); // Reset the mock
+        // Reset mock behavior before each test
     }
 
     @Test
-    void addUserIfNotInRepo_userNotInRepo_savesUserAndReturnsFalse()  {
+    @DisplayName("Should create new user when user does not exist")
+    void testAddUserIfNotInRepo_WhenUserNotExists_CreatesNewUser() {
+        // Given
+        when(userRepository.existsById(CHAT_ID)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        long chatId = 1L;
-        when(userRepository.existsById(chatId)).thenReturn(false);
+        // When
+        boolean result = startService.addUserIfNotInRepo(CHAT_ID);
 
-        boolean result = startService.addUserIfNotInRepo(chatId);
-
-        Assertions.assertThat(result).isFalse();
-        verify(userRepository, Mockito.times(1)).save(mockUser);
+        // Then
+        assertThat(result).isFalse(); // Returns false because user did not exist
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void addUserIfNotInRepo_userInRepo_returnsTrue()  {
-        long chatId = 1L;
-        when(userRepository.existsById(chatId)).thenReturn(true);
+    @DisplayName("Should not create user when user already exists")
+    void testAddUserIfNotInRepo_WhenUserExists_DoesNotCreateUser() {
+        // Given
+        when(userRepository.existsById(CHAT_ID)).thenReturn(true);
 
-        boolean result = startService.addUserIfNotInRepo(chatId);
+        // When
+        boolean result = startService.addUserIfNotInRepo(CHAT_ID);
 
-        Assertions.assertThat(result).isTrue();
-        verify(userRepository, never()).save(mockUser);
+        // Then
+        assertThat(result).isTrue(); // Returns true because user already existed
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    void createWelcomeAndGuideMessages_validInput_returnsMessages() {
-        long chatId = 1L;
-        String userFirstName = "test";
+    @DisplayName("Should create welcome and guide messages for new user")
+    void testCreateWelcomeAndGuideMessages_ReturnsListOfTwoMessages() {
+        // When
+        List<SendMessage> result = startService.createWelcomeAndGuideMessages(CHAT_ID, USER_FIRST_NAME);
 
-        List<SendMessage> messages = startService.createWelcomeAndGuideMessages(chatId, userFirstName);
-
-        Assertions.assertThat(messages).isNotNull();
-        Assertions.assertThat(messages).hasSize(2);
-        Assertions.assertThat(messages.get(0).getText()).contains(userFirstName);
-        Assertions.assertThat(messages.get(1).getText()).isEqualTo("GUIDE_MESSAGE");
+        // Then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getChatId()).isEqualTo(String.valueOf(CHAT_ID));
+        assertThat(result.get(0).getText()).contains("Hi, " + USER_FIRST_NAME);
+        assertThat(result.get(1).getChatId()).isEqualTo(String.valueOf(CHAT_ID));
+        assertThat(result.get(1).getText()).contains("Quick Start Guide");
     }
 
     @Test
-    void createWelcomeMessageWithGetGuideButton_validInput_returnsMessage() {
-        long chatId = 1L;
-        String userFirstName = "test";
+    @DisplayName("Should create welcome message with get guide button for existing user")
+    void testCreateWelcomeMessageWithGetGuideButton_ReturnsListWithButton() {
+        // When
+        List<SendMessage> result = startService.createWelcomeMessageWithGetGuideButton(CHAT_ID, USER_FIRST_NAME);
 
-        List<SendMessage> messages = startService.createWelcomeAndGuideMessages(chatId, userFirstName);
-
-        Assertions.assertThat(messages).isNotNull();
-        Assertions.assertThat(messages).hasSize(2);
-        Assertions.assertThat(messages.get(0).getText()).contains(userFirstName);
-        Assertions.assertThat(messages.get(0).getReplyMarkup()).isNotNull();
+        // Then
+        assertThat(result).hasSize(1);
+        SendMessage message = result.get(0);
+        assertThat(message.getChatId()).isEqualTo(String.valueOf(CHAT_ID));
+        assertThat(message.getText()).contains("Hi, " + USER_FIRST_NAME);
+        assertThat(message.getText()).contains("get guide");
+        assertThat(message.getReplyMarkup()).isNotNull();
     }
 
     @Test
-    void createGuideMessage() {
-        long chatId = 1L;
+    @DisplayName("Should create guide message with comprehensive instructions")
+    void testCreateGuideMessage_ReturnsDetailedGuide() {
+        // When
+        SendMessage result = startService.createGuideMessage(CHAT_ID);
 
-        SendMessage message = startService.createGuideMessage(chatId);
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getChatId()).isEqualTo(String.valueOf(CHAT_ID));
+        assertThat(result.getText()).contains("Quick Start Guide");
+        assertThat(result.getText()).contains("Step 1");
+        assertThat(result.getText()).contains("/showallpackages");
+        assertThat(result.getText()).contains("/help");
+        assertThat(result.getText()).contains("/stop");
+        assertThat(result.getParseMode()).isEqualTo("Markdown");
+    }
 
-        Assertions.assertThat(message).isNotNull();
-        Assertions.assertThat(message.getText()).isEqualTo("GUIDE_MESSAGE");
+    @Test
+    @DisplayName("Should handle exception during user creation gracefully")
+    void testAddUserIfNotInRepo_WhenExceptionThrown_ReturnsFalse() {
+        // Given
+        when(userRepository.existsById(CHAT_ID)).thenThrow(new RuntimeException("Database error"));
+
+        // When
+        boolean result = startService.addUserIfNotInRepo(CHAT_ID);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should include user first name in welcome message")
+    void testCreateWelcomeAndGuideMessages_IncludesUserName() {
+        // When
+        List<SendMessage> result = startService.createWelcomeAndGuideMessages(CHAT_ID, "Alice");
+
+        // Then
+        assertThat(result.get(0).getText()).contains("Hi, Alice");
     }
 }

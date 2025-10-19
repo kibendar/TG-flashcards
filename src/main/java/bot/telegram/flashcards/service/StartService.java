@@ -67,9 +67,43 @@ public class StartService {
 
     public SendMessage createGuideMessage(long chatId) {
         try {
+            String guideText = """
+                    📖 *Quick Start Guide*
+
+                    Welcome to the Flashcards Bot! Here's how to get started:
+
+                    *Step 1: Browse Packages*
+                    Use /showallpackages to see all available flashcard packages. Each package contains cards on a specific topic.
+
+                    *Step 2: View Package Details*
+                    Click on any package to see:
+                    • Package description
+                    • Number of cards
+                    • Preview of the cards
+
+                    *Step 3: Start Learning*
+                    Click the "Start education" button to begin your learning session.
+
+                    *Step 4: Answer Cards*
+                    For each flashcard:
+                    1. Read the question
+                    2. Click "Show answer" to reveal the answer
+                    3. Rate how well you knew it (0% to 100%)
+
+                    *Step 5: Complete Your Session*
+                    Cards you find difficult will repeat for better learning. Complete all cards to finish!
+
+                    *Other Commands:*
+                    /help - View all available commands
+                    /stop - Stop your current learning session
+
+                    Ready to start? Use /showallpackages now!
+                    """;
+
             return SendMessage.builder()
                     .chatId(chatId)
-                    .text("GUIDE_MESSAGE")
+                    .text(guideText)
+                    .parseMode("Markdown")
                     .build();
         }catch (Exception e){
             log.error("Error with create guide message", e);
