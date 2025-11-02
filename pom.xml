@@ -14,9 +14,9 @@
     <name>TGFlashcardsBot</name>
     <description>TGFlashcardsBot</description>
     <properties>
-        <java.version>25</java.version>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
     </properties>
 
     <dependencyManagement>
@@ -98,25 +98,25 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.hibernate.orm/hibernate-core -->
+        <!-- Hibernate Core - version managed by Spring Boot -->
+        <!-- Removed explicit version to use Spring Boot's managed version (6.4.x) which supports Java 22+ -->
+        <!--
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.0.0.Final</version>
         </dependency>
+        -->
 
-        <!-- Hibernate Validator for Jakarta Bean Validation -->
+        <!-- Hibernate Validator - version managed by Spring Boot -->
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>8.0.1.Final</version>
         </dependency>
 
-        <!-- Jakarta Validation API -->
+        <!-- Jakarta Validation API - version managed by Spring Boot -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.2</version>
         </dependency>
 
         <!-- Jakarta Expression Language (EL) API -->
@@ -155,9 +155,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>25</source>
-                    <target>25</target>
-                    <release>25</release>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
         </plugins>
