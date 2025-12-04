@@ -109,6 +109,8 @@ The application follows a **layered architecture** pattern with **SOLID principl
 └──────────────────────────────────────┘
 ```
 
+![Diagram of classes](~/JavaProject/TG-flashcards/class-diagram.pdf)
+
 ### SOLID Principles Implementation
 
 The project follows **SOLID principles** for better maintainability and testability:
