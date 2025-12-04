@@ -1,0 +1,302 @@
+classDiagram
+    %% Core Models
+    class User {
+        -long id
+        -List~FlashcardPackage~ flashcardPackageList
+        -List~FlashcardEducationList~ flashcardEducationList
+        -List~FlashcardRepetitionList~ flashcardRepetitionList
+        -Long currentFlashcard
+        -LocalDateTime startStudyTime
+        -LocalDateTime endStudyTime
+        -Long hardCard
+        -Long hardestCard
+        +User()
+        +addHardCard(Long increase)
+        +addHardestCard(Long increase)
+        +setZeroForCards()
+        +createUserWithId(long id)$
+    }
+
+    class FlashcardPackage {
+        -long id
+        -String title
+        -String description
+        -List~Flashcard~ flashcardList
+        -User user
+    }
+
+    class Flashcard {
+        -long id
+        -FlashcardPackage flashcardPackage
+        -List~FlashcardEducationList~ flashcardEducationList
+        -FlashcardRepetitionList flashcardRepetitionList
+        -String question
+        -String answer
+    }
+
+    %% Temporary Models
+    class FlashcardEducationList {
+        -FlashcardEducationListPK flashcardEducationListPK
+        -Flashcard flashcard
+    }
+
+    class FlashcardEducationListPK {
+        -long id
+        -User user
+    }
+
+    class FlashcardRepetitionList {
+        -FlashcardRepetitionListPK flashcardRepetitionListPK
+        -Flashcard flashcard
+    }
+
+    class FlashcardRepetitionListPK {
+        -long id
+        -User user
+    }
+
+    class FlashcardStatus {
+        -FlashcardStatusPK flashcardStatusPK
+        -Integer numberOfDuplicatedCards
+        -String difficultyStatus
+    }
+
+    class FlashcardStatusPK {
+        -User user
+        -Flashcard flashcard
+    }
+
+    %% Enums
+    class FlashcardAnswerStatus {
+        <<enumeration>>
+        EASY
+        HARD
+        HARDEST
+    }
+
+    %% Configuration
+    class BotConfig {
+        -String name
+        -String token
+    }
+
+    class BotInitializer {
+        -TelegramBotsApi telegramBotsApi
+        -MainController mainController
+        +BotInitializer(MainController mainController)
+        +init()
+    }
+
+    class TgFlashcardsBotApplication {
+        +main(String[] args)$
+    }
+
+    %% Controllers
+    class MainController {
+        -BotConfig config
+        -StartController startController
+        -HelpController helpController
+        -EducationController educationController
+        -ShowAllPackagesController showAllPackagesController
+        -StopController stopController
+        +MainController(BotConfig config, StartController startController, EducationController educationController, HelpController helpController, ShowAllPackagesController ShowAllPackagesController, StopController stopController)
+        +getBotUsername() String
+        +onUpdateReceived(Update update)
+        -onMessageReceived(Update update)
+        -onCallbackQueryReceived(Update update)
+        -executeMessage(Method message)
+        -defaultMessage(long chatId)
+    }
+
+    class StartController {
+        -StartService startService
+        +StartController(StartService startService)
+        +startCommandReceived(Update update) List~SendMessage~
+        +getGuideButtonClicked(CallbackQuery callbackQuery) List~BotApiMethod~
+    }
+
+    class HelpController {
+        -HelpService helpService
+        +HelpController(HelpService helpService)
+        +helpCommandReceived(Update update) SendMessage
+    }
+
+    class EducationController {
+        -EducationService educationService
+        +EducationController(EducationService educationService)
+        +startEducation(CallbackQuery callbackQuery) EditMessageText
+        +showAnswer(CallbackQuery callbackQuery) EditMessageText
+        +answerButtonClicked(CallbackQuery callbackQuery, FlashcardAnswerStatus flashcardAnswerStatus) EditMessageText
+        +showAnswerRepetition(CallbackQuery callbackQuery) EditMessageText
+        +nextQuestionRepetition(CallbackQuery callbackQuery) EditMessageText
+    }
+
+    class ShowAllPackagesController {
+        -ShowAllPackagesService showAllPackagesService
+        +ShowAllPackagesController(ShowAllPackagesService showAllPackagesService)
+        +showAllPackagesCommandReceived(Update update) SendMessage
+        +showPackageDescription(CallbackQuery callbackQuery) EditMessageText
+        +showPreviousOrNextCard(CallbackQuery callbackQuery) EditMessageText
+    }
+
+    class StopController {
+        -StopService stopService
+        +StopController(StopService stopService)
+        +stopCommandReceived(Update update) SendMessage
+    }
+
+    %% Services
+    class UserService {
+        -UserRepository userRepository
+        +UserService(UserRepository userRepository)
+        +getUser(long id) User
+        +save(User user)
+    }
+
+    class StartService {
+        -UserRepository userRepository
+        +StartService(UserRepository userRepository)
+        +getStartMessage(long chatId) SendMessage
+        +getGuideMessage(long chatId, int messageId) List~BotApiMethod~
+    }
+
+    class HelpService {
+        +getHelpMessage(long chatId) SendMessage
+    }
+
+    class EducationService {
+        -FlashcardService flashcardService
+        -UserService userService
+        -FlashcardEducationListRepository flashcardEducationListRepository
+        -FlashcardStatusRepository flashcardStatusRepository
+        -FlashcardRepetitionListRepository flashcardRepetitionListRepository
+        +EducationService(FlashcardService flashcardService, UserService userService, FlashcardEducationListRepository flashcardEducationListRepository, FlashcardStatusRepository flashcardStatusRepository, FlashcardRepetitionListRepository flashcardRepetitionListRepository)
+        +generateFlashcardList(long flashcardPackageId, long chatId, int messageId) EditMessageText
+        +changeMsgToMsgWithShownAnswer(long chatId, int messageId) EditMessageText
+        +changeMsgToMsgWithShownAnswerRepetition(long chatId, int messageId) EditMessageText
+        +duplicateFlashcard(long chatId, int numberOfDuplicates)
+        +moveFlashcardToRepetitionList(long chatId)
+        +decreaseNumberOfDuplicatesIfExists(long chatId)
+        +nextFlashcard(long chatId, int messageId) EditMessageText
+        +nextRepetitionFlashcard(long chatId, int messageId) EditMessageText
+        +clearTemporaryResourcesAfterEducation(long chatId)
+    }
+
+    class FlashcardService {
+        -FlashcardPackageRepository flashcardPackageRepository
+        -FlashcardRepository flashcardRepository
+        +FlashcardService(FlashcardPackageRepository flashcardPackageRepository, FlashcardRepository flashcardRepository)
+        +getFlashcardPackage(long id) FlashcardPackage
+        +getFlashcard(long id) Flashcard
+    }
+
+    class ShowAllPackagesService {
+        -FlashcardService flashcardService
+        -UserService userService
+        +ShowAllPackagesService(FlashcardService flashcardService, UserService userService)
+        +getShowAllPackagesMessage(long chatId) SendMessage
+        +getPackageDescription(long chatId, long packageId, int messageId) EditMessageText
+        +getPreviousOrNextCard(long chatId, int messageId, String callbackData) EditMessageText
+    }
+
+    class StopService {
+        -EducationService educationService
+        +StopService(EducationService educationService)
+        +getStopMessage(long chatId) SendMessage
+    }
+
+    %% Service Interfaces
+    class IUserService {
+        <<interface>>
+        +getUser(long chatId) User
+        +save(User user)
+    }
+
+    class IEducationService {
+        <<interface>>
+        +generateFlashcardList(long flashcardPackageId, long chatId, int messageId) EditMessageText
+        +changeMsgToMsgWithShownAnswer(long chatId, int messageId) EditMessageText
+        +changeMsgToMsgWithShownAnswerRepetition(long chatId, int messageId) EditMessageText
+        +duplicateFlashcard(long chatId, int numberOfDuplicates)
+        +moveFlashcardToRepetitionList(long chatId)
+        +decreaseNumberOfDuplicatesIfExists(long chatId)
+        +nextFlashcard(long chatId, int messageId) EditMessageText
+        +nextRepetitionFlashcard(long chatId, int messageId) EditMessageText
+        +clearTemporaryResourcesAfterEducation(long chatId)
+    }
+
+    %% Repositories
+    class UserRepository {
+        <<interface>>
+    }
+
+    class FlashcardRepository {
+        <<interface>>
+    }
+
+    class FlashcardPackageRepository {
+        <<interface>>
+    }
+
+    class FlashcardEducationListRepository {
+        <<interface>>
+    }
+
+    class FlashcardRepetitionListRepository {
+        <<interface>>
+    }
+
+    class FlashcardStatusRepository {
+        <<interface>>
+    }
+
+    %% Relationships - Model Layer
+    User "1" --> "*" FlashcardPackage : owns
+    User "1" --> "*" FlashcardEducationList : has
+    User "1" --> "*" FlashcardRepetitionList : has
+    FlashcardPackage "1" --> "*" Flashcard : contains
+    FlashcardPackage "*" --> "1" User : belongs to
+    Flashcard "*" --> "1" FlashcardPackage : in package
+    Flashcard "1" --> "*" FlashcardEducationList : appears in
+    Flashcard "1" --> "0..1" FlashcardRepetitionList : marked for repetition
+    FlashcardEducationList --> FlashcardEducationListPK : composite key
+    FlashcardEducationListPK --> User : references
+    FlashcardRepetitionList --> FlashcardRepetitionListPK : composite key
+    FlashcardRepetitionListPK --> User : references
+    FlashcardStatus --> FlashcardStatusPK : composite key
+    FlashcardStatusPK --> User : references
+    FlashcardStatusPK --> Flashcard : references
+
+    %% Relationships - Configuration Layer
+    BotInitializer --> MainController : initializes
+    TgFlashcardsBotApplication --> BotInitializer : creates
+    MainController --> BotConfig : uses
+
+    %% Relationships - Controller Layer
+    MainController --> StartController : delegates
+    MainController --> HelpController : delegates
+    MainController --> EducationController : delegates
+    MainController --> ShowAllPackagesController : delegates
+    MainController --> StopController : delegates
+    StartController --> StartService : uses
+    HelpController --> HelpService : uses
+    EducationController --> EducationService : uses
+    EducationController ..> FlashcardAnswerStatus : uses
+    ShowAllPackagesController --> ShowAllPackagesService : uses
+    StopController --> StopService : uses
+
+    %% Relationships - Service Layer
+    UserService ..|> IUserService : implements
+    EducationService ..|> IEducationService : implements
+    UserService --> UserRepository : uses
+    EducationService --> FlashcardService : uses
+    EducationService --> UserService : uses
+    EducationService --> FlashcardEducationListRepository : uses
+    EducationService --> FlashcardStatusRepository : uses
+    EducationService --> FlashcardRepetitionListRepository : uses
+    FlashcardService --> FlashcardPackageRepository : uses
+    FlashcardService --> FlashcardRepository : uses
+    ShowAllPackagesService --> FlashcardService : uses
+    ShowAllPackagesService --> UserService : uses
+    StopService --> EducationService : uses
+    StartService --> UserRepository : uses
